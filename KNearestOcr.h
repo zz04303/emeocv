@@ -28,6 +28,8 @@ public:
     char recognize(const cv::Mat & img);
     std::string recognize(const std::vector<cv::Mat> & images);
 
+    std::string recognize_learn(const std::vector<cv::Mat> & images); // erik
+
 private:
     cv::Mat prepareSample(const cv::Mat & img);
     void initModel();

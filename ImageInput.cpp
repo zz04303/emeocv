@@ -16,6 +16,10 @@
 
 #include "ImageInput.h"
 
+#include "unistd.h"     /* zz04303 usleep */
+
+#include "Config.h"     /* zz04303 */
+
 ImageInput::~ImageInput() {
 }
 
@@ -50,23 +54,63 @@ DirectoryInput::DirectoryInput(const Directory& directory) :
 }
 
 bool DirectoryInput::nextImage() {
-    if (_itFilename == _filenameList.end()) {
-        return false;
-    }
+
+//  ophalen config start
+    Config config;
+    config.loadConfig();
+//  ophalen config: einde
+
     std::string path = _directory.fullpath(*_itFilename);
 
-    _img = cv::imread(path.c_str());
+    if (_itFilename == _filenameList.end()) {
+      std::cout << " einde file list" << std::endl;
+      return false;
+    }
 
-    // read time from file name
-    struct tm date;
-    memset(&date, 0, sizeof(date));
-    date.tm_year = atoi(_itFilename->substr(0, 4).c_str()) - 1900;
-    date.tm_mon = atoi(_itFilename->substr(4, 2).c_str()) - 1;
-    date.tm_mday = atoi(_itFilename->substr(6, 2).c_str());
-    date.tm_hour = atoi(_itFilename->substr(9, 2).c_str());
-    date.tm_min = atoi(_itFilename->substr(11, 2).c_str());
-    date.tm_sec = atoi(_itFilename->substr(13, 2).c_str());
-    _time = mktime(&date);
+    if (!config.getOneFile()) {
+      std::cout << *_itFilename << " "  << std::flush;   // flush used due to learning mode
+    }
+
+    while(1) {                                        /* zz04303 */
+    /* sometimes misformed image from file/webcam */
+      _img = cv::imread(path.c_str());
+      if (_img.rows == config.getImgH() && _img.cols == config.getImgW() ) {    /* zz04303 */
+          break;                                      /* zz04303 */
+      }                                               /* zz04303 */
+      std::cout << "Unexpected: _img.rows " << _img.rows << " _img.cols " << _img.cols << std::endl;    /* zz04303 */
+      std::cout << "Write image unchanged and wait 10sec" << std::endl;    /* zz04303 */
+      // save copy of image if requested
+      if (!_outDir.empty()) {
+        saveImage();
+      }
+      usleep(10000000);   /* wait in miliseconden */  /* zz04303 */
+    }
+
+    cv::Rect myROI(config.getCoordX(), config.getCoordY(), config.getCoordW(), config.getCoordH() );  /* zz04303 */
+
+    cv::Mat _img_crop = _img(myROI);
+    _img = _img_crop;
+
+    time(&_time);
+
+    if (!config.getOneFile()) {
+
+      std::string path = _directory.fullpath(*_itFilename);
+
+      _img = cv::imread(path.c_str());
+
+      // read time from file name
+      struct tm date;
+      memset(&date, 0, sizeof(date));
+      date.tm_year = atoi(_itFilename->substr(0, 4).c_str()) - 1900;
+      date.tm_mon = atoi(_itFilename->substr(4, 2).c_str()) - 1;
+      date.tm_mday = atoi(_itFilename->substr(6, 2).c_str());
+      date.tm_hour = atoi(_itFilename->substr(9, 2).c_str());
+      date.tm_min = atoi(_itFilename->substr(11, 2).c_str());
+      date.tm_sec = atoi(_itFilename->substr(13, 2).c_str());
+      _time = mktime(&date);
+    }
+
 
     log4cpp::Category::getRoot() << log4cpp::Priority::INFO << "Processing " << *_itFilename << " of " << ctime(&_time);
 
@@ -75,7 +119,9 @@ bool DirectoryInput::nextImage() {
         saveImage();
     }
 
-    _itFilename++;
+    if (!config.getOneFile()) {
+      _itFilename++;
+    }
     return true;
 }
 

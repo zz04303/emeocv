@@ -26,7 +26,8 @@ public:
 };
 
 ImageProcessor::ImageProcessor(const Config & config) :
-        _config(config), _debugWindow(false), _debugSkew(false), _debugDigits(false), _debugEdges(false) {
+    _config(config), _debugWindow(false), _debugSkew(false), _debugDigits(false), _debugEdges(false) {//
+//  _config(config), _debugWindow(true), _debugSkew(true), _debugDigits(true), _debugEdges(true) {
 }
 
 /**
@@ -74,6 +75,8 @@ void ImageProcessor::showImage() {
  */
 void ImageProcessor::process() {
     _digits.clear();
+
+    _config.loadConfig();      /* zz04303 load config for dynamic changes*/
 
     // convert to gray
     cvtColor(_img, _imgGray, CV_BGR2GRAY);
@@ -182,6 +185,7 @@ cv::Mat ImageProcessor::cannyEdges() {
     cv::Mat edges;
     // detect edges
     cv::Canny(_imgGray, edges, _config.getCannyThreshold1(), _config.getCannyThreshold2());
+//  std::cout << "ImgProc" << _config.getCannyThreshold1() << "_" << _config.getCannyThreshold2() << std::endl;
     return edges;
 }
 

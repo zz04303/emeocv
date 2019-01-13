@@ -43,6 +43,7 @@ int KNearestOcr::learn(const cv::Mat & img) {
     if (key >= '0' && key <= '9') {
         _responses.push_back(cv::Mat(1, 1, CV_32F, (float) key - '0'));
         _samples.push_back(prepareSample(img));
+        std::cout << (char)key << std::flush;  // zz04303
     }
 
     return key;
@@ -54,7 +55,7 @@ int KNearestOcr::learn(const cv::Mat & img) {
 int KNearestOcr::learn(const std::vector<cv::Mat>& images) {
     int key = 0;
     for (std::vector<cv::Mat>::const_iterator it = images.begin();
-            it < images.end() && key != 's' && key != 'q'; ++it) {
+            it < images.end() && key != 's' && key != 'q' && key != 'n'; ++it) {    // zz04303: toegevoegd key=n
         key = learn(*it);
     }
     return key;
@@ -135,6 +136,27 @@ std::string KNearestOcr::recognize(const std::vector<cv::Mat>& images) {
     return result;
 }
 
+
+/**
+ * Recognize a vector of digits. AND LEARN //zz04303
+ */
+std::string KNearestOcr::recognize_learn(const std::vector<cv::Mat>& images) {
+    std::string result;
+    int key = 0;
+    char cres = '?';
+    for (std::vector<cv::Mat>::const_iterator it = images.begin();
+            it != images.end(); ++it) {
+          cres  = recognize(*it);
+          if (cres == '?') {
+            std::cout << "\n Ask for entry 0to9: " << std::flush;
+            key = learn(*it);
+            }
+        result += cres;
+    }
+    return result;
+}
+
+
 /**
  * Prepare an image of a digit to work as a sample for the model.
  */
@@ -158,3 +180,4 @@ void KNearestOcr::initModel() {
     _pModel->train(trainData);
 #endif
 }
+

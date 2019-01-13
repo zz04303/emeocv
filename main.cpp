@@ -3,6 +3,7 @@
  *
  */
 
+#include <ctime>                                     /* zz04303 */
 #include <string>
 #include <list>
 #include <algorithm>
@@ -46,6 +47,8 @@ static void testOcr(ImageInput* pImageInput) {
     ImageProcessor proc(config);
     proc.debugWindow();
     proc.debugDigits();
+    proc.debugEdges(); /* zz04303 */
+    proc.debugSkew();  /* zz04303 */
 
     Plausi plausi;
 
@@ -58,6 +61,9 @@ static void testOcr(ImageInput* pImageInput) {
     std::cout << "<q> to quit.\n";
 
     while (pImageInput->nextImage()) {
+
+        config.loadConfig();
+
         proc.setInput(pImageInput->getImage());
         proc.process();
 
@@ -84,42 +90,60 @@ static void learnOcr(ImageInput* pImageInput) {
     config.loadConfig();
     ImageProcessor proc(config);
     proc.debugWindow();
+    proc.debugEdges(); /* zz04303 */
+    proc.debugSkew();  /* zz04303 */
 
     KNearestOcr ocr(config);
-    ocr.loadTrainingData();
+
     std::cout << "Entering OCR training mode!\n";
-    std::cout << "<0>..<9> to answer digit, <space> to ignore digit, <s> to save and quit, <q> to quit without saving.\n";
+    std::cout << "<0>..<9> to answer digit, <space> to ignore digit,\n";
+    std::cout << "<n> to skip to next vector of images (when available),\n";
+    std::cout << "<s> to save and quit, <q> to quit without saving.\n";
+
+
 
     int key = 0;
-    while (pImageInput->nextImage()) {
+    int fileindex = 0;
+    while (1) {
+
+        if (! ocr.loadTrainingData()) {
+        std::cout << "Failed to load OCR training data\n";
+        break;
+        }
+
+        if (! pImageInput->nextImage()) {
+        break;
+        }
+
         proc.setInput(pImageInput->getImage());
         proc.process();
+        fileindex++;
 
-        key = ocr.learn(proc.getOutput());
-        std::cout << std::endl;
-
-        if (key == 'q' || key == 's') {
-            std::cout << "Quit\n";
-            break;
+        std::string result = ocr.recognize(proc.getOutput());
+        std::cout << fileindex << " result=" << result << " " << std::endl;
+        if (result.find('?') != std::string::npos) {
+          std::string result = ocr.recognize_learn(proc.getOutput());
+          ocr.saveTrainingData();
+          std::cout << "Saving training data\n";
+        }
+        if ( result != "" ) {  //zz04303 delete class/object/data o.i.d.
+          ocr.~KNearestOcr();  //zz04303 delete class/object/data o.i.d.
         }
     }
 
-    if (key != 'q') {
-        std::cout << "Saving training data\n";
-        ocr.saveTrainingData();
-    }
 }
 
 static void adjustCamera(ImageInput* pImageInput) {
     log4cpp::Category::getRoot().info("adjustCamera");
+
 
     Config config;
     config.loadConfig();
     ImageProcessor proc(config);
     proc.debugWindow();
     proc.debugDigits();
-    //proc.debugEdges();
-    //proc.debugSkew();
+    proc.debugEdges(); /* zz04303 */
+    proc.debugSkew();  /* zz04303 */
 
     std::cout << "Adjust camera.\n";
     std::cout << "<r>, <p> to select raw or processed image, <s> to save config and quit, <q> to quit without saving.\n";
@@ -171,6 +195,13 @@ static void writeData(ImageInput* pImageInput) {
 
     Plausi plausi;
 
+    double SampleCount     = 0;     /* zz04303 */
+    double SampleSucces    = 0;     /* zz04303 */
+    double SampleRatio     = 0;     /* zz04303 */
+    double SampleRAvg      = 0;     /* zz04303 */
+    double SampleRAvgIdeal = 0;     /* zz04303 */
+    double SampleOK        = 0;     /* zz04303 */
+
     RRDatabase rrd("emeter.rrd");
 
     struct stat st;
@@ -187,12 +218,55 @@ static void writeData(ImageInput* pImageInput) {
         proc.setInput(pImageInput->getImage());
         proc.process();
 
-        if (proc.getOutput().size() == 7) {
+        struct tm * timeinfo;                                    /* zz04303 , need #include <ctime> */
+        time_t _time;                                            /* zz04303 */
+        char timestr[20];                                        /* zz04303 */
+        time(&_time);                                            /* zz04303 */
+        timeinfo = localtime(&_time);                            /* zz04303 */
+        strftime(timestr, 20, "%Y%m%d-%H%M%S ", timeinfo);       /* zz04303 */
+        std::string result = ocr.recognize(proc.getOutput());    /* zz04303 */
+        std::cout << timestr << result;                          /* zz04303 */
+
+        config.loadConfig();                                     /* zz04303 */
+
+        SampleCount++;                                           /* zz04303 */
+        SampleOK = 0;                                            /* zz04303 */
+
+
+        if (proc.getOutput().size() == config.getDigitNum()) {   /* zz04303 (originally 7) */
             std::string result = ocr.recognize(proc.getOutput());
+
+            struct tm * Ctimeinfo;                                /* zz04303 */
+            time_t _Ctime;                                        /* zz04303 */
+            char Ctimestr[20];                                    /* zz04303 */
+            _Ctime = plausi.getCheckedTime();                     /* zz04303 */
+            Ctimeinfo = localtime(&_Ctime);                       /* zz04303 */
+            strftime(Ctimestr, 20, "%Y%m%d-%H%M%S", Ctimeinfo);   /* zz04303 */
+
             if (plausi.check(result, pImageInput->getTime())) {
-                rrd.update(plausi.getCheckedTime(), plausi.getCheckedValue());
-            }
+                SampleSucces++;
+                SampleOK = 1;
+                std::cout << "  " << std::fixed << std::setprecision(1) << plausi.getCheckedValue() << " " << Ctimestr; /* zz04303 */
+                int ret = rrd.update(plausi.getCheckedTime(), plausi.getCheckedValue());
+                if ( ret != 0 )                                        /* zz04303 */
+                  {std::cout << " rrd.update error # = " << ret;}      /* zz04303 */
+            } else {                                                   /* zz04303 */
+            std::cout << "  -------" << " " << Ctimestr;               /* zz04303 */
+            }                                                          /* zz04303 */
         }
+
+        if(SampleCount > 12) {
+        SampleRatio = SampleSucces * 100 / (SampleCount - 12);
+
+        SampleRAvg -= SampleRAvg / config.getRollAvgInt();
+        SampleRAvg += SampleOK / config.getRollAvgInt();
+
+        SampleRAvgIdeal -= SampleRAvgIdeal / config.getRollAvgInt();
+        SampleRAvgIdeal += 1.0 / config.getRollAvgInt();
+        }
+
+        std::cout << " " << std::setw (6) << SampleRatio << "%/"<<std::setw (6)<<int(SampleCount)<< " " << std::setw (6) << SampleRAvg*100 << "%/"<< config.getRollAvgInt() << "("<<SampleRAvgIdeal*100<<"%)"<<std::endl;                                  /* zz04303 */
+
         if (0 == stat("imgdebug", &st) && S_ISDIR(st.st_mode)) {
             // write debug image
             pImageInput->setOutputDir("imgdebug");
@@ -315,3 +389,6 @@ int main(int argc, char **argv) {
     delete pImageInput;
     exit(EXIT_SUCCESS);
 }
+
+
+
