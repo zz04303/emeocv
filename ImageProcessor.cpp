@@ -49,6 +49,7 @@ void ImageProcessor::debugWindow(bool bval) {
     _debugWindow = bval;
     if (_debugWindow) {
         cv::namedWindow("ImageProcessor");
+        cv::moveWindow("ImageProcessor",550,200);   /* zz04303 */
     }
 }
 
@@ -231,6 +232,8 @@ void ImageProcessor::findCounterDigits() {
     // edge image
     cv::Mat edges = cannyEdges();
     if (_debugEdges) {
+        cv::namedWindow("edges");          /* zz04303 */
+        cv::moveWindow("edges",550,400);   /* zz04303 */
         cv::imshow("edges", edges);
     }
 
@@ -264,6 +267,8 @@ void ImageProcessor::findCounterDigits() {
         // draw contours
         cv::Mat cont = cv::Mat::zeros(edges.rows, edges.cols, CV_8UC1);
         cv::drawContours(cont, filteredContours, -1, cv::Scalar(255));
+        cv::namedWindow("contours");           /* zz04303 */
+        cv::moveWindow("contours",550,300);    /* zz04303 */
         cv::imshow("contours", cont);
     }
 

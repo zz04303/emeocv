@@ -38,14 +38,15 @@ KNearestOcr::~KNearestOcr() {
  * Learn a single digit.
  */
 int KNearestOcr::learn(const cv::Mat & img) {
+    cv::namedWindow("Learn");           /* zz04303 */
+    cv::moveWindow("Learn",550,100);    /* zz04303 */
     cv::imshow("Learn", img);
     int key = cv::waitKey(0) & 255;
     if (key >= '0' && key <= '9') {
         _responses.push_back(cv::Mat(1, 1, CV_32F, (float) key - '0'));
         _samples.push_back(prepareSample(img));
-        std::cout << (char)key << std::flush;  // zz04303
     }
-
+    std::cout << (char)key << std::flush;  // zz04303
     return key;
 }
 
@@ -148,7 +149,7 @@ std::string KNearestOcr::recognize_learn(const std::vector<cv::Mat>& images) {
             it != images.end(); ++it) {
           cres  = recognize(*it);
           if (cres == '?') {
-            std::cout << "\n Ask for entry 0to9: " << std::flush;
+            std::cout << "\n Already recognized: " << result << '?' << "  Ask for entry 0to9: " << std::flush;
             key = learn(*it);
             }
         result += cres;

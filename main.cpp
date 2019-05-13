@@ -94,6 +94,7 @@ static void learnOcr(ImageInput* pImageInput) {
     proc.debugSkew();  /* zz04303 */
 
     KNearestOcr ocr(config);
+    Plausi plausi;     /* zz04303 */
 
     std::cout << "Entering OCR training mode!\n";
     std::cout << "<0>..<9> to answer digit, <space> to ignore digit,\n";
@@ -120,11 +121,19 @@ static void learnOcr(ImageInput* pImageInput) {
         fileindex++;
 
         std::string result = ocr.recognize(proc.getOutput());
-        std::cout << fileindex << " result=" << result << " " << std::endl;
+        std::cout << fileindex << " digits=" << result.length() << "/" << config.getDigitNum() << " result=" << result << " ";
+
+        if (plausi.check(result, pImageInput->getTime())) {            /* zz04303 */
+            std::cout << "  " << std::fixed << std::setprecision(1) << plausi.getCheckedValue() << " " << std::endl; /* zz04303 */
+            break;                                                     /* zz04303 */
+            } else {                                                   /* zz04303 */
+            std::cout << "  -------" << " " << std::endl;              /* zz04303 */
+            }                                                          /* zz04303 */
+
         if (result.find('?') != std::string::npos) {
           std::string result = ocr.recognize_learn(proc.getOutput());
           ocr.saveTrainingData();
-          std::cout << "Saving training data\n";
+          std::cout << "\nSaving training data\n";
         }
         if ( result != "" ) {  //zz04303 delete class/object/data o.i.d.
           ocr.~KNearestOcr();  //zz04303 delete class/object/data o.i.d.
