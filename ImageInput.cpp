@@ -60,12 +60,12 @@ bool DirectoryInput::nextImage() {
     config.loadConfig();
 //  ophalen config: einde
 
-    std::string path = _directory.fullpath(*_itFilename);
-
     if (_itFilename == _filenameList.end()) {
-      std::cout << " einde file list" << std::endl;
+      std::cout << " end of file list" << std::endl;
       return false;
     }
+
+    std::string path = _directory.fullpath(*_itFilename);
 
     if (!config.getOneFile()) {
       std::cout << *_itFilename << " "  << std::flush;   // flush used due to learning mode

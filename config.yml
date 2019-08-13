@@ -7,3 +7,23 @@ digitMaxHeight: 90
 digitYAlignment: 10
 ocrMaxDist: 600000.
 trainingDataFilename: "training.yml"
+digitNum: 6
+divisionNum: 10
+# coordX = carveout upper left vertical
+coordX: 52
+# coordY = carveout upper left horizontal
+coordY: 176
+# coordW = carveout width
+coordW: 275
+# coordH = carveout height
+coordH: 54
+# imgW = width input image (default = 480)
+imgW: 480
+# imgH = height input image (deault = 640)
+imgH: 640
+# oneFile=1 always same filename (usually constantly rewritten), oneFile = 0 is series with filename format yyyymmdd-hhmmss.png
+oneFile: 1
+# negativeNum = allowed decrease for solar panel (for voor gas = 0)   (is float, so needs period after digit, i.e. 0. )
+negativeNum: 0.
+# rollAvgInt is number samples for last ( estimated) rolling average
+rollAvgInt: 240

@@ -125,7 +125,7 @@ static void learnOcr(ImageInput* pImageInput) {
 
         if (plausi.check(result, pImageInput->getTime())) {            /* zz04303 */
             std::cout << "  " << std::fixed << std::setprecision(1) << plausi.getCheckedValue() << " " << std::endl; /* zz04303 */
-            break;                                                     /* zz04303 */
+            if (config.getOneFile()) {break;}                                                     /* zz04303 */
             } else {                                                   /* zz04303 */
             std::cout << "  -------" << " " << std::endl;              /* zz04303 */
             }                                                          /* zz04303 */
