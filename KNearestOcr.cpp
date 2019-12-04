@@ -56,7 +56,7 @@ int KNearestOcr::learn(const cv::Mat & img) {
 int KNearestOcr::learn(const std::vector<cv::Mat>& images) {
     int key = 0;
     for (std::vector<cv::Mat>::const_iterator it = images.begin();
-            it < images.end() && key != 's' && key != 'q' && key != 'n'; ++it) {    // zz04303: toegevoegd key=n
+            it < images.end() && key != 's' && key != 'q' && key != 'n'; ++it) {    // zz04303: added key=n
         key = learn(*it);
     }
     return key;

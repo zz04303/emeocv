@@ -24,7 +24,7 @@ public:
     virtual cv::Mat & getImage();
     virtual time_t getTime();
     virtual void setOutputDir(const std::string & outDir);
-    virtual void saveImage();
+    virtual void saveImage(const std::string & NoDate);
 
 protected:
     cv::Mat _img;

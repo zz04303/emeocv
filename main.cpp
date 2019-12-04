@@ -33,6 +33,8 @@
 #include "Plausi.h"
 #include "RRDatabase.h"
 
+#include "myMosq.h"
+
 static int delay = 1000;
 
 #ifndef VERSION
@@ -103,7 +105,7 @@ static void learnOcr(ImageInput* pImageInput) {
 
 
 
-    int key = 0;
+//    int key = 0;
     int fileindex = 0;
     while (1) {
 
@@ -147,6 +149,7 @@ static void adjustCamera(ImageInput* pImageInput) {
 
 
     Config config;
+
     config.loadConfig();
     ImageProcessor proc(config);
     proc.debugWindow();
@@ -223,6 +226,22 @@ static void writeData(ImageInput* pImageInput) {
     std::cout << "OCR training data loaded.\n";
     std::cout << "<Ctrl-C> to quit.\n";
 
+    char emeocvhost[24];                                                               /* zz04303 */
+    gethostname(emeocvhost,24);                                                        /* zz04303 */
+    std::string _emeocv_pid = "emeocv|" + std::to_string(getpid()) + "-" + emeocvhost; /* zz04303 */
+    std::cout << "program|pid-hostname:"<< _emeocv_pid << "\n";                        /* zz04303 */
+    const char* emeocv_pid = _emeocv_pid.c_str() ;                                     /* zz04303 */
+    std::string _MqttTopic = config.getMqttTopic();                                    /* zz04303 */
+    const char* MqttTopic = _MqttTopic.c_str() ;                                       /* zz04303 */
+    std::string _MqttHost = config.getMqttHost();                                      /* zz04303 */
+    const char* MqttHost = _MqttHost.c_str() ;                                         /* zz04303 */
+    myMosq *mosq;                                                                      /* zz04303 */
+    mosq = new myMosq(emeocv_pid,MqttTopic, MqttHost, config.getMqttPort() );          /* zz04303 */
+
+//    int mqtt_constat;
+//    mosq.mosquitto_connack_string(mqtt_constat);
+//    std::cout << "mqtt connection status:"<< mqtt_constat << "\n";
+
     while (pImageInput->nextImage()) {
         proc.setInput(pImageInput->getImage());
         proc.process();
@@ -253,14 +272,11 @@ static void writeData(ImageInput* pImageInput) {
             strftime(Ctimestr, 20, "%Y%m%d-%H%M%S", Ctimeinfo);   /* zz04303 */
 
             if (plausi.check(result, pImageInput->getTime())) {
-                SampleSucces++;
-                SampleOK = 1;
-                std::cout << "  " << std::fixed << std::setprecision(1) << plausi.getCheckedValue() << " " << Ctimestr; /* zz04303 */
-                int ret = rrd.update(plausi.getCheckedTime(), plausi.getCheckedValue());
-                if ( ret != 0 )                                        /* zz04303 */
-                  {std::cout << " rrd.update error # = " << ret;}      /* zz04303 */
+              SampleSucces++;
+              SampleOK = 1;     /* see below for RRD write */
+              std::cout << "  " << std::fixed << std::setprecision(1) << plausi.getCheckedValue() << " " << Ctimestr; /* zz04303 */
             } else {                                                   /* zz04303 */
-            std::cout << "  -------" << " " << Ctimestr;               /* zz04303 */
+              std::cout << "  -------" << " " << Ctimestr;             /* zz04303 */
             }                                                          /* zz04303 */
         }
 
@@ -274,16 +290,46 @@ static void writeData(ImageInput* pImageInput) {
         SampleRAvgIdeal += 1.0 / config.getRollAvgInt();
         }
 
-        std::cout << " " << std::setw (6) << SampleRatio << "%/"<<std::setw (6)<<int(SampleCount)<< " " << std::setw (6) << SampleRAvg*100 << "%/"<< config.getRollAvgInt() << "("<<SampleRAvgIdeal*100<<"%)"<<std::endl;                                  /* zz04303 */
+        std::cout << " " << std::setw (6) << SampleRatio << "%/"<<std::setw (6)<<int(SampleCount)<< " " <<
+          std::setw (6) << SampleRAvg*100 << "%/"<< config.getRollAvgInt() << "("<<SampleRAvgIdeal*100<<"%)"<<std::endl;                                  /* zz04303 */
+
+        std::string _SvalueOK = "";
+
+        if ( SampleOK == 1 ) {
+          int ret = rrd.update(plausi.getCheckedTime(), plausi.getCheckedValue());
+          if ( ret != 0 )                                        /* zz04303 */
+            {std::cout << " rrd.update error # = " << ret;}      /* zz04303 */
+
+          _SvalueOK = "counter=" + std::to_string(plausi.getCheckedValue()) + ",";          /* zz04303 */
+        }
+
+        std::string _Svalue = "emeocv " + _SvalueOK +                                        /* zz04303 */
+          "SampleRatio="     + std::to_string(SampleRatio) +                                 /* zz04303 */
+          ",SampleCount="     + std::to_string(SampleCount) +                                /* zz04303 */
+          ",SampleRAvg="      + std::to_string(SampleRAvg)  +                                /* zz04303 */
+          ",RollAvgInt="      + std::to_string(config.getRollAvgInt()) +                     /* zz04303 */
+          ",SampleRAvgIdeal=" + std::to_string(SampleRAvgIdeal);                             /* zz04303 */
+        const char* Svalue = _Svalue.c_str() ;                                               /* zz04303 */
+          if (!mosq->send_message(Svalue))       /* issue mqtt publish */                    /* zz04303 */
+            {std::cout << " mqtt: not delivered?\n";}          /* when not succesful */      /* zz04303 */
+
 
         if (0 == stat("imgdebug", &st) && S_ISDIR(st.st_mode)) {
             // write debug image
             pImageInput->setOutputDir("imgdebug");
-            pImageInput->saveImage();
+            pImageInput->saveImage("");
+            pImageInput->setOutputDir("");
+        }
+        if (0 == stat("imgsingle", &st) && S_ISDIR(st.st_mode)) {
+            // write debug image
+            pImageInput->setOutputDir("imgsingle");
+            pImageInput->saveImage("NoDate");
             pImageInput->setOutputDir("");
         }
         usleep(delay*1000L);
     }
+
+  mosq->disconnect(); /* zz04303 */
 }
 
 static void usage(const char* progname) {

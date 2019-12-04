@@ -35,11 +35,12 @@ void ImageInput::setOutputDir(const std::string & outDir) {
     _outDir = outDir;
 }
 
-void ImageInput::saveImage() {
+void ImageInput::saveImage(const std::string & NoDate) {
     struct tm date;
     localtime_r(&_time, &date);
     char filename[PATH_MAX];
-    strftime(filename, PATH_MAX, "/%Y%m%d-%H%M%S.png", &date);
+    if (NoDate == "NoDate") {strftime(filename, PATH_MAX, "/out.png", &date);}   /* &date is not used  zz04303 */
+    else                    {strftime(filename, PATH_MAX, "/%Y%m%d-%H%M%S.png", &date);}
     std::string path = _outDir + filename;
     if (cv::imwrite(path, _img)) {
         log4cpp::Category::getRoot() << log4cpp::Priority::INFO << "Image saved to " + path;
@@ -72,21 +73,36 @@ bool DirectoryInput::nextImage() {
     }
 
     while(1) {                                        /* zz04303 */
-    /* sometimes misformed image from file/webcam */
-      _img = cv::imread(path.c_str());
-      if (_img.rows == config.getImgH() && _img.cols == config.getImgW() ) {    /* zz04303 */
-          break;                                      /* zz04303 */
+
+      /* try/catch due to sometimes exception during imread */
+      try { _img = cv::imread(path.c_str()); }
+      catch (...) { std::cout << "An exception occurred during cv::imread() #1 in ImageInput.cpp (zz04303)" << std::endl; }
+
+      /* sometimes misformed image from file/webcam */
+      if ((_img.rows == config.getImgH()   && _img.cols == config.getImgW() ) ||       /* normal processing    zz04303 */
+          (_img.rows == config.getCoordH() && _img.cols == config.getCoordW() ) ) {    /* apparently debugging zz04303 */
+          break;  /* break when OK */                 /* zz04303 */
       }                                               /* zz04303 */
       std::cout << "Unexpected: _img.rows " << _img.rows << " _img.cols " << _img.cols << std::endl;    /* zz04303 */
       std::cout << "Write image unchanged and wait 10sec" << std::endl;    /* zz04303 */
       // save copy of image if requested
       if (!_outDir.empty()) {
-        saveImage();
+        saveImage("");
       }
       usleep(10000000);   /* wait in miliseconden */  /* zz04303 */
     }
 
-    cv::Rect myROI(config.getCoordX(), config.getCoordY(), config.getCoordW(), config.getCoordH() );  /* zz04303 */
+    int CoordX, CoordY;
+    if (_img.rows == config.getCoordH() && _img.cols == config.getCoordW() ) {   /* apparently debugging, because same size as the originally intended cut-out of the camera image zz04303 */
+      CoordX = 0;
+      CoordY = 0;
+      }
+    else {                                                                       /* normal processing    zz04303 */
+      CoordX = config.getCoordX();
+      CoordY = config.getCoordY();
+      }
+
+    cv::Rect myROI( CoordX, CoordY, config.getCoordW(), config.getCoordH() );    /* zz04303 */
 
     cv::Mat _img_crop = _img(myROI);
     _img = _img_crop;
@@ -97,7 +113,9 @@ bool DirectoryInput::nextImage() {
 
       std::string path = _directory.fullpath(*_itFilename);
 
-      _img = cv::imread(path.c_str());
+      /* try/catch due to sometimes exception during imread */
+      try { _img = cv::imread(path.c_str()); }
+      catch (...) { std::cout << "An exception occurred during cv::imread() #2 in ImageInput.cpp (zz04303)" << std::endl; }
 
       // read time from file name
       struct tm date;
@@ -116,7 +134,7 @@ bool DirectoryInput::nextImage() {
 
     // save copy of image if requested
     if (!_outDir.empty()) {
-        saveImage();
+        saveImage("");
     }
 
     if (!config.getOneFile()) {
@@ -138,7 +156,7 @@ bool CameraInput::nextImage() {
 
     // save copy of image if requested
     if (success && !_outDir.empty()) {
-        saveImage();
+        saveImage("");
     }
 
     return success;

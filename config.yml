@@ -27,3 +27,8 @@ oneFile: 1
 negativeNum: 0.
 # rollAvgInt is number samples for last ( estimated) rolling average
 rollAvgInt: 240
+#mqtt settings: optional
+mqttTopic: "xxx/yyy/zzz"
+mqttHost: "192.x.y.z"
+mqttPort: 1883
+

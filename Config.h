@@ -86,6 +86,15 @@ public:
      int getRollAvgInt() const {
         return _rollAvgInt;
     }
+      std::string getMqttHost() const {
+        return _mqttHost;
+    }
+      std::string getMqttTopic() const {
+        return _mqttTopic;
+    }
+      int getMqttPort() const {
+        return _mqttPort;
+    }
 private:
     int _rotationDegrees;
     float _ocrMaxDist;
@@ -106,6 +115,9 @@ private:
     int _oneFile;
     float _negativeNum;
     int _rollAvgInt;
+    std::string _mqttHost;
+    std::string _mqttTopic;
+    int _mqttPort;
 };
 
 #endif /* CONFIG_H_ */
