@@ -13,7 +13,7 @@ Config::Config() :
                 200), _trainingDataFilename("trainctr.yml") ,_digitNum(6),
                 _divisionNum(1), _coordX(0), _coordY(0), _coordW(480), _coordH(640),
                 _imgW(480), _imgH(640), _oneFile(0), _negativeNum(0), _rollAvgInt(10),
-                _mqttTopic(), _mqttHost(), _mqttPort(1883) {
+                _mqttParentTopic("emeocv"), _mqttSubTopics(), _mqttHost(), _mqttPort(1883) {
 }
 
 void Config::saveConfig() {
@@ -37,7 +37,8 @@ void Config::saveConfig() {
     fs << "oneFile" << _oneFile;
     fs << "negativeNum" << _negativeNum;
     fs << "rollAvgInt" << _rollAvgInt;
-    fs << "mqttTopic" << _mqttTopic;
+    fs << "mqttParentTopic" << _mqttParentTopic;
+    fs << "mqttSubTopics" << _mqttSubTopics;
     fs << "mqttHost" << _mqttHost;
     fs << "mqttPort" << _mqttPort;
     fs.release();
@@ -65,7 +66,8 @@ void Config::loadConfig() {
         fs["oneFile"] >> _oneFile;
         fs["negativeNum"] >> _negativeNum;
         fs["rollAvgInt"] >> _rollAvgInt;
-        fs["mqttTopic"] >> _mqttTopic;
+        fs["mqttParentTopic"] >> _mqttParentTopic;
+        fs["mqttSubTopics"] >> _mqttSubTopics;
         fs["mqttHost"] >> _mqttHost;
         fs["mqttPort"] >> _mqttPort;
         fs.release();

@@ -231,8 +231,11 @@ static void writeData(ImageInput* pImageInput) {
     std::string _emeocv_pid = "emeocv|" + std::to_string(getpid()) + "-" + emeocvhost; /* zz04303 */
     std::cout << "program|pid-hostname:"<< _emeocv_pid << "\n";                        /* zz04303 */
     const char* emeocv_pid = _emeocv_pid.c_str() ;                                     /* zz04303 */
-    std::string _MqttTopic = config.getMqttTopic();                                    /* zz04303 */
+
+    // below due to string length in config.yml issue (max 15 char) splitted parent and sub topics
+    std::string _MqttTopic = config.getMqttParentTopic() + "/" + config.getMqttSubTopics(); /* zz04303 */
     const char* MqttTopic = _MqttTopic.c_str() ;                                       /* zz04303 */
+
     std::string _MqttHost = config.getMqttHost();                                      /* zz04303 */
     const char* MqttHost = _MqttHost.c_str() ;                                         /* zz04303 */
     myMosq *mosq;                                                                      /* zz04303 */

@@ -89,8 +89,12 @@ public:
       std::string getMqttHost() const {
         return _mqttHost;
     }
-      std::string getMqttTopic() const {
-        return _mqttTopic;
+// below due to string length in config.yml issue (max 15 char) splitted parent and sub topics
+      std::string getMqttParentTopic() const {
+        return _mqttParentTopic;
+    }
+      std::string getMqttSubTopics() const {
+        return _mqttSubTopics;
     }
       int getMqttPort() const {
         return _mqttPort;
@@ -116,7 +120,8 @@ private:
     float _negativeNum;
     int _rollAvgInt;
     std::string _mqttHost;
-    std::string _mqttTopic;
+    std::string _mqttParentTopic;
+    std::string _mqttSubTopics;
     int _mqttPort;
 };
 
