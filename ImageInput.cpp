@@ -66,6 +66,67 @@ bool DirectoryInput::nextImage() {
       return false;
     }
 
+//Start section for start/end time filtering  zz04303
+    if (!config.getOneFile()) {
+
+      std::string StartDateTime = config.getStartDateTime();
+      std::string EndDateTime   = config.getEndDateTime();
+
+      if (StartDateTime != "") {
+        if(StartDateTime.length() != 15 ) {
+          std::cout << " Length error StartDateTime : " << config.getStartDateTime() << std::endl;
+          std::cout << "                              yyyymmdd-hhmmss" << std::endl;
+          return false;
+          }
+        StartDateTime = StartDateTime.erase(8,1);
+        if(!isNumeric(StartDateTime)) {
+          std::cout << " Format error StartDateTime : " << config.getStartDateTime() << std::endl;
+          std::cout << "                              yyyymmdd-hhmmss" << std::endl;
+          return false;
+          }
+        }
+
+      if (EndDateTime   != "") {
+        if(EndDateTime.length() != 15 ) {
+          std::cout << " Length error EndDateTime : " << config.getEndDateTime() << std::endl;
+          std::cout << "                            yyyymmdd-hhmmss" << std::endl;
+          return false;
+          }
+        EndDateTime = EndDateTime.erase(8,1);
+        if(!isNumeric(EndDateTime)) {
+          std::cout << " Format error EndDateTime : " << config.getEndDateTime() << std::endl;
+          std::cout << "                            yyyymmdd-hhmmss" << std::endl;
+          return false;
+          }
+        }
+
+      std::string FilenameDateTime = *_itFilename;
+      FilenameDateTime = FilenameDateTime.erase(8,1);
+      FilenameDateTime = FilenameDateTime.erase(14,4);
+
+      if ( FilenameDateTime > EndDateTime && EndDateTime != "" ) {
+        std::cout << " FilenameDateTime > EndDateTime : " << *_itFilename << " > " << config.getEndDateTime() << std::endl;
+        return false;
+      }
+
+      int PrintFlag = 1;
+      while ( FilenameDateTime < StartDateTime && StartDateTime != "" ) {
+        if (PrintFlag) {
+          std::cout << " FilenameDateTime < StartDateTime : " << *_itFilename << " < " << config.getStartDateTime() << std::endl;
+          PrintFlag = 0;
+          }
+        _itFilename++;
+        if (_itFilename == _filenameList.end()) {
+          std::cout << " end of file list (outside DateTime range)" << std::endl;
+          return false;
+          }
+        FilenameDateTime = *_itFilename;
+        FilenameDateTime = FilenameDateTime.erase(8,1);
+        FilenameDateTime = FilenameDateTime.erase(14,4);
+      }
+    }
+//End section for start/end time filtering     zz04303
+
     std::string path = _directory.fullpath(*_itFilename);
 
     if (!config.getOneFile()) {
@@ -162,4 +223,7 @@ bool CameraInput::nextImage() {
     return success;
 }
 
-
+bool ImageInput::isNumeric(const std::string& input) {           /* zz04303 */
+    return std::all_of(input.begin(), input.end(), ::isdigit);   /* zz04303 */
+    // Using all_of (requires C++11)  https://rosettacode.org/wiki/Determine_if_a_string_is_numeric#C.2B.2B
+}

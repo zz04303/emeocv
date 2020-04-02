@@ -20,6 +20,7 @@ public:
     virtual ~ImageInput();
 
     virtual bool nextImage() = 0;
+    virtual bool isNumeric(const std::string& input);    /* zz04303 */
 
     virtual cv::Mat & getImage();
     virtual time_t getTime();

@@ -13,7 +13,8 @@ Config::Config() :
                 200), _trainingDataFilename("trainctr.yml") ,_digitNum(6),
                 _divisionNum(1), _coordX(0), _coordY(0), _coordW(480), _coordH(640),
                 _imgW(480), _imgH(640), _oneFile(0), _negativeNum(0), _rollAvgInt(10),
-                _mqttParentTopic("emeocv"), _mqttSubTopics(), _mqttHost(), _mqttPort(1883) {
+                _mqttParentTopic("emeocv"), _mqttSubTopics(), _mqttHost(), _mqttPort(1883),
+                _StartDateTime(), _EndDateTime() {
 }
 
 void Config::saveConfig() {
@@ -41,6 +42,8 @@ void Config::saveConfig() {
     fs << "mqttSubTopics" << _mqttSubTopics;
     fs << "mqttHost" << _mqttHost;
     fs << "mqttPort" << _mqttPort;
+    fs << "StartDateTime" << _StartDateTime;
+    fs << "EndDateTime" << _EndDateTime;
     fs.release();
 }
 
@@ -70,6 +73,8 @@ void Config::loadConfig() {
         fs["mqttSubTopics"] >> _mqttSubTopics;
         fs["mqttHost"] >> _mqttHost;
         fs["mqttPort"] >> _mqttPort;
+        fs["StartDateTime"] >> _StartDateTime;
+        fs["EndDateTime"] >> _EndDateTime;
         fs.release();
     } else {
         // no config file - create an initial one with default values

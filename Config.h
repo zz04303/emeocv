@@ -99,6 +99,12 @@ public:
       int getMqttPort() const {
         return _mqttPort;
     }
+      std::string getStartDateTime() const {
+        return _StartDateTime;
+    }
+      std::string getEndDateTime() const {
+        return _EndDateTime;
+    }
 private:
     int _rotationDegrees;
     float _ocrMaxDist;
@@ -123,6 +129,8 @@ private:
     std::string _mqttParentTopic;
     std::string _mqttSubTopics;
     int _mqttPort;
+    std::string _StartDateTime;
+    std::string _EndDateTime;
 };
 
 #endif /* CONFIG_H_ */

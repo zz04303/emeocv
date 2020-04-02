@@ -132,7 +132,7 @@ static void learnOcr(ImageInput* pImageInput) {
             std::cout << "  -------" << " " << std::endl;              /* zz04303 */
             }                                                          /* zz04303 */
 
-        if (result.find('?') != std::string::npos) {
+        if (result.find('?') != std::string::npos && result.length() <= config.getDigitNum() ) {    /* zz04303 skip when too many digits */
           std::string result = ocr.recognize_learn(proc.getOutput());
           ocr.saveTrainingData();
           std::cout << "\nSaving training data\n";
@@ -376,6 +376,9 @@ int main(int argc, char **argv) {
     std::string logLevel = "ERROR";
     char cmd = 0;
     int cmdCount = 0;
+
+    std::cout << "Program to read and recognize the counter of an electricity meter with OpenCV.\n";
+    std::cout << "Compiled: " << __DATE__ << " | " << __TIME__ << " | " << __FILE__ <<  "\n";
 
     while ((opt = getopt(argc, argv, "i:c:ltaws:o:v:h")) != -1) {
         switch (opt) {
